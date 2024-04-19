@@ -125,16 +125,51 @@ type Terminology struct {
 func TestArangoContainer(t *testing.T) {
 	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
 	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
-	ter,err:=db.FindOne(context.Background(),map[string]interface{}{"terminologyId":"ICD10CM"})
+	ter,err:=db.FindOne(map[string]interface{}{"code":222})
 	if err!=nil{
 		fmt.Println(err)
 	}
 	fmt.Println(ter)
 
-	results,err:=db.FindAll(context.Background(),map[string]interface{}{"terminologyId":"ICD10CM"},0,100)
+	results,err:=db.FindAll(map[string]interface{}{"terminologyId":"ICD10CM"},nil,0,100)
 	if err==nil{
 		for _,v:=range results{
 			fmt.Println(v)
 		}
 	}
+}
+
+func TestUpdate(t *testing.T) {
+	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
+	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
+	results,err:=db.Update(map[string]interface{}{"terminologyId":"ICD10-FA"},map[string]interface{}{"coding_fa":"grade-baa"},20)
+	if err==nil{
+		for _,v:=range results{
+			fmt.Println(v)
+		}
+	}
+
+}
+
+func TestRqwQuery(t *testing.T) {
+	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
+	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
+	results,err:=db.RawQuery("for doc in items sort doc._id desc limit 0,10 return doc")
+	if err==nil{
+		for _,v:=range results{
+			fmt.Println(v)
+		}
+	}
+
+}
+
+func TestInser(t *testing.T) {
+	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
+	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{TerminologyID: "TEST_ID",Code: 4420,Value: "okayyy"})
+	results,err:=db.Insert()
+	if err==nil{
+			fmt.Println(results)
+		
+	}
+
 }
