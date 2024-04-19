@@ -173,3 +173,16 @@ func TestInser(t *testing.T) {
 	}
 
 }
+
+func TestCreateDb(t *testing.T) {
+	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
+
+	err:=CreateDatabaseIfNotExist(context.Background(),"defaultdb","expOne")
+	if err!=nil{
+		fmt.Println(err)
+	}
+	err=CreateCollectionIfNotExist(context.Background(),"defaultdb","expOne","users")
+	if err!=nil{
+		fmt.Println(err)
+	}
+}
