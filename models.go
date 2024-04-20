@@ -15,3 +15,9 @@ type ArangoContainer[T any] struct {
 	DatabaseName   string
 	CollectionName string
 }
+
+type TXStore struct{
+	TxId driver.TransactionID
+	TxContext context.Context
+	Db driver.Database
+}

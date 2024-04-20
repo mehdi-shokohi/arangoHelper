@@ -197,3 +197,32 @@ func TestCreateDb(t *testing.T) {
 		fmt.Println(err)
 	}
 }
+
+func TestTransaction(t *testing.T) {
+	const defaultStore = "defaultdb"
+	const defaultDb = "_system"
+	AddNewConnection(defaultStore,[]string{"http://localhost:8530"},driver.BasicAuthentication("root", "mate123"))
+	CreateCollectionIfNotExist(context.Background(),defaultStore,defaultDb,"users")
+	CreateCollectionIfNotExist(context.Background(),defaultStore,defaultDb,"info")
+
+	ctx:=context.Background()
+	tx,err:=NewTransactionContext(ctx,defaultStore,defaultDb,[]string{"users","info"})
+	if err!=nil{
+		panic(err)
+	}
+	user:=make(map[string]interface{})
+	user["name"]="mate"
+	user["age"]=38
+
+	dbUser:=NewArango(tx.TxContext,defaultStore,defaultDb,"users",user)
+	dbUser.Insert()
+
+	info:=make(map[string]interface{})
+	info["score"] = 10
+	info["user"] = user["name"]
+	dbInfo:=NewArango(tx.TxContext,defaultStore,defaultDb,"info",info)
+	dbInfo.Insert()
+	tx.Commit()
+	
+
+}

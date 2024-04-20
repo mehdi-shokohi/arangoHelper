@@ -10,7 +10,6 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-
 func NewArango[T any](ctx context.Context, clientId, dbName, collection string, model T) ArangoContainer[T] {
 	m := ArangoContainer[T]{}
 	RWdb, exist := GetClientById(clientId)
@@ -262,23 +261,27 @@ func (m *ArangoContainer[T]) Insert() (map[string]interface{}, error) {
 
 	return doc, nil
 }
-/*
-Use returned Context on Queries and finally transaction be done with
-db.AbortTransaction() or db.CommitTransaction()
 
-*/
-func (m *ArangoContainer[T])NewTransactionContext()(context.Context,error){
-	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
+
+func NewTransactionContext(ctx context.Context, clientId, dbName string, collectionContribute []string) (*TXStore, error) {
+	cli, exist := GetClientById(clientId)
+	if !exist {
+		return nil, errors.New("before this func define connection by AddNewConnection")
+	}
+
+	db, err := cli.Database(ctx, dbName)
 	if err != nil {
 		return nil, err
 	}
-	trxid, err := db.BeginTransaction(m.Ctx, driver.TransactionCollections{Exclusive: []string{m.CollectionName}}, nil)
+
+	trxid, err := db.BeginTransaction(ctx, driver.TransactionCollections{Exclusive: collectionContribute}, nil)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
-	tctx := driver.WithTransactionID(m.Ctx, trxid)
-	return tctx,nil
+	tctx := driver.WithTransactionID(ctx, trxid)
+	tx:=TXStore{TxId: trxid,TxContext: tctx,Db: db}
+	return &tx, nil
 }
 
 func CreateDatabaseIfNotExist(ctx context.Context, clientId, dbName string) error {
@@ -311,3 +314,11 @@ func CreateCollectionIfNotExist(ctx context.Context, clientId, dbName, collectio
 	return err
 }
 
+
+func (t *TXStore)Commit()error{
+	return t.Db.CommitTransaction(t.TxContext,t.TxId,nil)
+}
+
+func (t *TXStore)Abort()error{
+	return t.Db.AbortTransaction(t.TxContext,t.TxId,nil)
+}
