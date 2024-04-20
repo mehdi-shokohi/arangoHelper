@@ -10,13 +10,6 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-type ArangoContainer[T any] struct {
-	Model          T
-	Ctx            context.Context
-	Connection     driver.Client
-	DatabaseName   string
-	CollectionName string
-}
 
 func NewArango[T any](ctx context.Context, clientId, dbName, collection string, model T) ArangoContainer[T] {
 	m := ArangoContainer[T]{}

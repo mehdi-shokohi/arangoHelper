@@ -125,13 +125,13 @@ type Terminology struct {
 func TestArangoContainer(t *testing.T) {
 	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
 	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
-	ter,err:=db.FindOne(map[string]interface{}{"code":222})
+	ter,err:=db.FindOne(AQL{"code":222})
 	if err!=nil{
 		fmt.Println(err)
 	}
 	fmt.Println(ter)
 
-	results,err:=db.FindAll(map[string]interface{}{"terminologyId":"ICD10CM"},nil,0,100)
+	results,err:=db.FindAll(AQL{"terminologyId":"ICD10CM"},nil,0,100)
 	if err==nil{
 		for _,v:=range results{
 			fmt.Println(v)
@@ -142,7 +142,7 @@ func TestArangoContainer(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
 	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
-	results,err:=db.Update(map[string]interface{}{"terminologyId":"ICD10-FA"},map[string]interface{}{"coding_fa":"grade-baa"},20)
+	results,err:=db.Update(AQL{"terminologyId":"ICD10-FA"},AQL{"coding_fa":"grade-baa"},20)
 	if err==nil{
 		for _,v:=range results{
 			fmt.Println(v)
