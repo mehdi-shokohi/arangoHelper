@@ -34,9 +34,11 @@ func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
 	}
 	querystring := "FOR doc IN @@collection "
 	exp := []string{}
-	for k := range filter {
-		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, strings.ReplaceAll(k,".","_")))
-	}
+	for k ,v:= range filter {
+		scapedKey:=strings.ReplaceAll(k,".","_")
+		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
+		filter[scapedKey] = v	
+		}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
 	}
@@ -76,8 +78,10 @@ func (m *ArangoContainer[T]) FindAll(filter AQL, sort SORT, offset, limit uint64
 	querystring := "FOR doc IN @@collection "
 	exp := []string{}
 
-	for k := range filter {
-		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, strings.ReplaceAll(k,".","_")))
+	for k ,v:= range filter {
+		scapedKey:=strings.ReplaceAll(k,".","_")
+		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
+		filter[scapedKey] = v
 	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
@@ -130,9 +134,10 @@ func (m *ArangoContainer[T]) Update(filter AQL, data interface{}, limit uint64) 
 	querystring := "FOR doc IN @@collection "
 	exp := []string{}
 
-	for k := range filter {
-		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, strings.ReplaceAll(k,".","_")))
-	}
+	for k,v := range filter {
+		scapedKey:=strings.ReplaceAll(k,".","_")
+		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
+		filter[scapedKey] = v	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
 		if limit > 0 {
@@ -178,8 +183,10 @@ func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint
 	querystring := "FOR doc IN @@collection "
 	exp := []string{}
 
-	for k := range filter {
-		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, strings.ReplaceAll(k,".","_")))
+	for k,v := range filter {
+		scapedKey:=strings.ReplaceAll(k,".","_")
+		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
+		filter[scapedKey] = v	
 	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
@@ -249,9 +256,11 @@ func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
 	querystring := "UPSERT "
 	exp := []string{}
 
-	for k := range filter {
-		exp = append(exp, fmt.Sprintf("doc.%s : @%s", k, strings.ReplaceAll(k,".","_")))
-	}
+	for k,v := range filter {
+		scapedKey:=strings.ReplaceAll(k,".","_")
+		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
+		filter[scapedKey] = v	
+		}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("{ %s }", strings.Join(exp, " , "))
 	}
