@@ -225,6 +225,24 @@ func (m *ArangoContainer[T]) Insert() (map[string]interface{}, error) {
 
 	return doc, nil
 }
+/*
+Use returned Context on Queries and finally transaction be done with
+db.AbortTransaction() or db.CommitTransaction()
+
+*/
+func (m *ArangoContainer[T])NewTransactionContext()(context.Context,error){
+	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	trxid, err := db.BeginTransaction(m.Ctx, driver.TransactionCollections{Exclusive: []string{m.CollectionName}}, nil)
+	if err != nil {
+		return nil,err
+	}
+
+	tctx := driver.WithTransactionID(m.Ctx, trxid)
+	return tctx,nil
+}
 
 func CreateDatabaseIfNotExist(ctx context.Context, clientId, dbName string) error {
 	client, ok := GetClientById(clientId)
@@ -255,3 +273,4 @@ func CreateCollectionIfNotExist(ctx context.Context, clientId, dbName, collectio
 	_, err = db.CreateCollection(ctx, collectionName, nil)
 	return err
 }
+
