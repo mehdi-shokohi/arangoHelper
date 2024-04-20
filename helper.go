@@ -264,7 +264,7 @@ func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
 	for k,v := range filter {
 		if strings.HasPrefix(k,"__") {continue}
 		scapedKey:="__"+strings.ReplaceAll(k,".","_")
-		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
+		exp = append(exp, fmt.Sprintf("%s : @%s", k, scapedKey))
 		filter[scapedKey] = v
 		}
 	if len(exp) > 0 {
