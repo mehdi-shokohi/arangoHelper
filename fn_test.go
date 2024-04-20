@@ -174,10 +174,10 @@ func TestUpsert(t *testing.T) {
 
 }
 
-func TestRawQuery(t *testing.T) {
+func TestRawQueryWithoutBindVar(t *testing.T) {
 	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
 	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
-	results,err:=db.RawQuery("for doc in items sort doc._id desc limit 0,10 return doc")
+	results,err:=db.RawQuery("for doc in items sort doc._id desc limit 0,10 return doc",nil)
 	if err==nil{
 		for _,v:=range results{
 			fmt.Println(v)
@@ -185,7 +185,17 @@ func TestRawQuery(t *testing.T) {
 	}
 
 }
+func TestRawQuery(t *testing.T) {
+	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
+	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
+	results,err:=db.RawQuery("for doc in items filter doc.terminologyId == @termId sort doc._id desc limit 0,10 return doc",AQL{"termId":"ICPC2P"})
+	if err==nil{
+		for _,v:=range results{
+			fmt.Println(v)
+		}
+	}
 
+}
 func TestInser(t *testing.T) {
 	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
 	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{TerminologyID: "TEST_ID",Code: 4420,Value: "okayyy"})

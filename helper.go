@@ -213,12 +213,12 @@ func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint
 	return docs, nil
 
 }
-func (m *ArangoContainer[T]) RawQuery(query string) ([]T, error) {
+func (m *ArangoContainer[T]) RawQuery(query string,bindVar AQL) ([]T, error) {
 	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
 	if err != nil {
 		return nil, err
 	}
-	cursor, err := db.Query(m.Ctx, query, nil)
+	cursor, err := db.Query(m.Ctx, query, bindVar)
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err
