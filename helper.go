@@ -24,7 +24,7 @@ func NewArango[T any](ctx context.Context, clientId, dbName, collection string, 
 	return m
 }
 
-func (m *ArangoContainer[T]) FindOne(filter map[string]interface{}) (*T, error) {
+func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
 	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (m *ArangoContainer[T]) FindOne(filter map[string]interface{}) (*T, error) 
 	return doc, nil
 }
 
-func (m *ArangoContainer[T]) FindAll(filter map[string]interface{}, sort map[string]string, offset, limit uint64) ([]T, error) {
+func (m *ArangoContainer[T]) FindAll(filter AQL, sort SORT, offset, limit uint64) ([]T, error) {
 	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func (m *ArangoContainer[T]) FindAll(filter map[string]interface{}, sort map[str
 
 	return docs, nil
 }
-func (m *ArangoContainer[T]) Update(filter map[string]interface{}, data interface{}, limit uint64) ([]T, error) {
+func (m *ArangoContainer[T]) Update(filter AQL, data interface{}, limit uint64) ([]T, error) {
 	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
 	if err != nil {
 		return nil, err
@@ -144,6 +144,53 @@ func (m *ArangoContainer[T]) Update(filter map[string]interface{}, data interfac
 	querystring += " RETURN NEW"
 	fmt.Println(querystring)
 	filter["data"] = data
+	filter["@collection"] = m.CollectionName
+	cursor, err := db.Query(m.Ctx, querystring, filter)
+	if err != nil {
+		log.Fatalf("Query failed: %v", err)
+		return nil, err
+	}
+	defer cursor.Close()
+	docs := make([]T, 0)
+	for {
+		var doc T
+		_, err := cursor.ReadDocument(m.Ctx, &doc)
+		if driver.IsNoMoreDocuments(err) {
+			break
+		} else if err != nil {
+			continue
+		}
+		docs = append(docs, doc)
+	}
+
+	return docs, nil
+
+}
+
+func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint64) ([]T, error) {
+	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	if filter == nil {
+		filter = make(map[string]interface{})
+	}
+	querystring := "FOR doc IN @@collection "
+	exp := []string{}
+
+	for k := range filter {
+		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, k))
+	}
+	if len(exp) > 0 {
+		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
+		if limit > 0 {
+			querystring += fmt.Sprintf(" LIMIT 0,%d", limit)
+		}
+	}
+	querystring += fmt.Sprintf(" update { _key: doc._key } with %s in @@collection",expression)
+
+	querystring += " RETURN NEW"
+	fmt.Println(querystring)
 	filter["@collection"] = m.CollectionName
 	cursor, err := db.Query(m.Ctx, querystring, filter)
 	if err != nil {
@@ -191,7 +238,7 @@ func (m *ArangoContainer[T]) RawQuery(query string) ([]T, error) {
 
 	return docs, nil
 }
-func (m *ArangoContainer[T]) Upsert(filter map[string]interface{}, data interface{}) ([]T, error) {
+func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
 	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
 	if err != nil {
 		return nil, err
@@ -243,7 +290,7 @@ func (m *ArangoContainer[T]) Insert() (map[string]interface{}, error) {
 	}
 	querystring := "Insert @data into @@collection return NEW"
 
-	cursor, err := db.Query(m.Ctx, querystring, map[string]interface{}{"@collection": m.CollectionName, "data": m.Model})
+	cursor, err := db.Query(m.Ctx, querystring, AQL{"@collection": m.CollectionName, "data": m.Model})
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err

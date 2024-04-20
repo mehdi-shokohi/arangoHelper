@@ -7,7 +7,7 @@ import (
 )
 
 type AQL map[string]interface{}
-
+type SORT map[string]string
 type ArangoContainer[T any] struct {
 	Model          T
 	Ctx            context.Context
@@ -16,8 +16,8 @@ type ArangoContainer[T any] struct {
 	CollectionName string
 }
 
-type TXStore struct{
-	TxId driver.TransactionID
+type TXStore struct {
+	TxId      driver.TransactionID
 	TxContext context.Context
-	Db driver.Database
+	Db        driver.Database
 }

@@ -150,6 +150,18 @@ func TestUpdate(t *testing.T) {
 	}
 
 }
+
+func TestUpdateFunc(t *testing.T) {
+	AddNewConnection("defaultdb",[]string{"http://localhost:8530"},driver.BasicAuthentication("root", "mate123"))
+	db:=NewArango(context.Background(),"defaultdb","_system","users",AQL{})
+	results,err:=db.UpdateExpr(AQL{"name":"mehdi"},`{spec:APPEND(doc.spec,"elem")}`,20)
+	if err==nil{
+		for _,v:=range results{
+			fmt.Println(v)
+		}
+	}
+
+}
 func TestUpsert(t *testing.T) {
 	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
 	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
@@ -162,7 +174,7 @@ func TestUpsert(t *testing.T) {
 
 }
 
-func TestRqwQuery(t *testing.T) {
+func TestRawQuery(t *testing.T) {
 	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
 	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
 	results,err:=db.RawQuery("for doc in items sort doc._id desc limit 0,10 return doc")
