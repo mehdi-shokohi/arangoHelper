@@ -192,7 +192,51 @@ func (m *ArangoContainer[T]) RawQuery(query string) ([]T, error) {
 
 	return docs, nil
 }
+func (m *ArangoContainer[T]) Upsert(filter map[string]interface{}, data interface{}) ([]T, error) {
+	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	if filter == nil {
+		filter = make(map[string]interface{})
+	}
+	//upsert {docId:@docId} insert @data update @data into @@collection
+	querystring := "UPSERT "
+	exp := []string{}
 
+	for k := range filter {
+		exp = append(exp, fmt.Sprintf("%s : @%s", k, k))
+	}
+	if len(exp) > 0 {
+		querystring += fmt.Sprintf("{ %s }", strings.Join(exp, " , "))
+	}
+	querystring += " INSERT @data UPDATE @data INTO @@collection"
+
+	querystring += " RETURN NEW"
+	fmt.Println(querystring)
+	filter["data"] = data
+	filter["@collection"] = m.CollectionName
+	cursor, err := db.Query(m.Ctx, querystring, filter)
+	if err != nil {
+		log.Fatalf("Query failed: %v", err)
+		return nil, err
+	}
+	defer cursor.Close()
+	docs := make([]T, 0)
+	for {
+		var doc T
+		_, err := cursor.ReadDocument(m.Ctx, &doc)
+		if driver.IsNoMoreDocuments(err) {
+			break
+		} else if err != nil {
+			continue
+		}
+		docs = append(docs, doc)
+	}
+
+	return docs, nil
+
+}
 func (m *ArangoContainer[T]) Insert() (map[string]interface{}, error) {
 	db, err := m.Connection.Database(m.Ctx, m.DatabaseName)
 	if err != nil {

@@ -150,6 +150,17 @@ func TestUpdate(t *testing.T) {
 	}
 
 }
+func TestUpsert(t *testing.T) {
+	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
+	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
+	results,err:=db.Upsert(AQL{"terminologyId":"mate_test"},Terminology{NameSpace: "ns003",TerminologyID: "mate_test",Code: "alt nelson mertin kent",Value: "okkkk_new"})
+	if err==nil{
+		for _,v:=range results{
+			fmt.Println(v)
+		}
+	}
+
+}
 
 func TestRqwQuery(t *testing.T) {
 	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
