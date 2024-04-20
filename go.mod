@@ -1,4 +1,4 @@
-module github.com/mehdi-shokohi/arango-helper
+module github.com/mehdi-shokohi/arangoHelper
 
 go 1.22.0
 
