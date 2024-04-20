@@ -246,12 +246,11 @@ func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
 	if filter == nil {
 		filter = make(map[string]interface{})
 	}
-	//upsert {docId:@docId} insert @data update @data into @@collection
 	querystring := "UPSERT "
 	exp := []string{}
 
 	for k := range filter {
-		exp = append(exp, fmt.Sprintf("%s : @%s", k, k))
+		exp = append(exp, fmt.Sprintf("doc.%s : @%s", k, k))
 	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("{ %s }", strings.Join(exp, " , "))
