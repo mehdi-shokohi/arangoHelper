@@ -255,28 +255,14 @@ func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
 	if err != nil {
 		return nil, err
 	}
-	if filter == nil {
-		filter = make(map[string]interface{})
-	}
-	querystring := "UPSERT "
-	exp := []string{}
-
-	for k,v := range filter {
-		if strings.HasPrefix(k,"__") {continue}
-		scapedKey:="__"+strings.ReplaceAll(k,".","_")
-		exp = append(exp, fmt.Sprintf("%s : @%s", k, scapedKey))
-		filter[scapedKey] = v
-		}
-	if len(exp) > 0 {
-		querystring += fmt.Sprintf("{ %s }", strings.Join(exp, " , "))
-	}
-	querystring += " INSERT @data UPDATE @data INTO @@collection"
-
-	querystring += " RETURN NEW"
+	querystring := "UPSERT @filter INSERT @data UPDATE @data INTO @@collection RETURN NEW"
 	fmt.Println(querystring)
-	filter["data"] = data
-	filter["@collection"] = m.CollectionName
-	cursor, err := db.Query(m.Ctx, querystring, filter)
+	bind:=make(map[string]interface{})
+	bind["filter"] = filter
+	bind["data"] = data
+
+	bind["@collection"] = m.CollectionName
+	cursor, err := db.Query(m.Ctx, querystring, bind)
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err
