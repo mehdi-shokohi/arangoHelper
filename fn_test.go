@@ -2,6 +2,7 @@ package arangoHelper
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -163,9 +164,11 @@ func TestUpdateFunc(t *testing.T) {
 
 }
 func TestUpsert(t *testing.T) {
-	AddNewConnection("defaultdb",GetDefaultLocalUri(),driver.BasicAuthentication("root", "mate123"))
-	db:=NewArango(context.Background(),"defaultdb","_system","items",Terminology{})
-	results,err:=db.Upsert(AQL{"terminologyId":"mate_test"},Terminology{NameSpace: "ns003",TerminologyID: "mate_test",Code: "alt nelson mertin kent",Value: "okkkk_new"})
+	AddNewConnection("defaultdb",[]string{"http://localhost:8530"},driver.BasicAuthentication("root", "mate123"))
+	db:=NewArango(context.Background(),"defaultdb","_system","cves_new",map[string]string{})
+	data:=make(map[string]interface{})
+	json.Unmarshal([]byte(jsonCVE),&data)
+	results,err:=db.Upsert(AQL{"cveMetadata":AQL{"cveId":"CVE-2023-5752"}},data)
 	if err==nil{
 		for _,v:=range results{
 			fmt.Println(v)
@@ -248,3 +251,143 @@ func TestTransaction(t *testing.T) {
 	
 
 }
+
+const jsonCVE = `
+{
+	"containers": {
+	  "cna": {
+		"affected": [
+		  {
+			"collectionURL": "https://pypi.org",
+			"defaultStatus": "affected",
+			"packageName": "pip",
+			"product": "pip",
+			"repo": "https://github.com/pypa/pip",
+			"vendor": "Pip maintainers",
+			"versions": [
+			  {
+				"status": "unaffected",
+				"version": "23.3"
+			  }
+			]
+		  }
+		],
+		"credits": [
+		  {
+			"lang": "en",
+			"type": "reporter",
+			"user": "00000000-0000-4000-9000-000000000000",
+			"value": "Paul Gerste"
+		  }
+		],
+		"descriptions": [
+		  {
+			"lang": "en",
+			"supportingMedia": [
+			  {
+				"base64": false,
+				"type": "text/html",
+				"value": "When installing a package from a Mercurial VCS URL  (ie \"pip install \nhg+...\") with pip prior to v23.3, the specified Mercurial revision could\n be used to inject arbitrary configuration options to the \"hg clone\" \ncall (ie \"--config\"). Controlling the Mercurial configuration can modify\n how and which repository is installed. This vulnerability does not \naffect users who aren't installing from Mercurial.<br>"
+			  }
+			],
+			"value": "When installing a package from a Mercurial VCS URL  (ie \"pip install \nhg+...\") with pip prior to v23.3, the specified Mercurial revision could\n be used to inject arbitrary configuration options to the \"hg clone\" \ncall (ie \"--config\"). Controlling the Mercurial configuration can modify\n how and which repository is installed. This vulnerability does not \naffect users who aren't installing from Mercurial.\n"
+		  }
+		],
+		"metrics": [
+		  {
+			"cvssV3_1": {
+			  "attackComplexity": "LOW",
+			  "attackVector": "LOCAL",
+			  "availabilityImpact": "NONE",
+			  "baseScore": 5.5,
+			  "baseSeverity": "MEDIUM",
+			  "confidentialityImpact": "NONE",
+			  "integrityImpact": "HIGH",
+			  "privilegesRequired": "LOW",
+			  "scope": "UNCHANGED",
+			  "userInteraction": "NONE",
+			  "vectorString": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N",
+			  "version": "3.1"
+			},
+			"format": "CVSS",
+			"scenarios": [
+			  {
+				"lang": "en",
+				"value": "GENERAL"
+			  }
+			]
+		  }
+		],
+		"problemTypes": [
+		  {
+			"descriptions": [
+			  {
+				"cweId": "CWE-77",
+				"description": "CWE-77 Improper Neutralization of Special Elements used in a Command ('Command Injection')",
+				"lang": "en",
+				"type": "CWE"
+			  }
+			]
+		  }
+		],
+		"providerMetadata": {
+		  "dateUpdated": "2023-10-24T21:41:30.616Z",
+		  "orgId": "28c92f92-d60d-412d-b760-e73465c3df22",
+		  "shortName": "PSF"
+		},
+		"references": [
+		  {
+			"tags": [
+			  "patch"
+			],
+			"url": "https://github.com/pypa/pip/pull/12306"
+		  },
+		  {
+			"tags": [
+			  "vendor-advisory"
+			],
+			"url": "https://mail.python.org/archives/list/security-announce@python.org/thread/F4PL35U6X4VVHZ5ILJU3PWUWN7H7LZXL/"
+		  },
+		  {
+			"url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/YBSB3SUPQ3VIFYUMHPO3MEQI4BJAXKCZ/"
+		  }
+		],
+		"source": {
+		  "discovery": "UNKNOWN"
+		},
+		"title": "Mercurial configuration injectable in repo revision when installing via pip",
+		"x_generator": {
+		  "engine": "Vulnogram 0.1.0-dev"
+		}
+	  }
+	},
+	"search": [
+	  {
+		"K": "cveId",
+		"V": "CVE-2023-5752"
+	  },
+	  {
+		"K": "assignerShortName",
+		"V": "PSF"
+	  },
+	  {
+		"K": "product",
+		"V": "pip"
+	  },
+	  {
+		"K": "vendor",
+		"V": "Pip maintainers"
+	  }
+	],
+	"doc": "When installing a package from a Mercurial VCS URL  (ie \"pip install \nhg+...\") with pip prior to v23.3, the specified Mercurial revision could\n be used to inject arbitrary configuration options to the \"hg clone\" \ncall (ie \"--config\"). Controlling the Mercurial configuration can modify\n how and which repository is installed. This vulnerability does not \naffect users who aren't installing from Mercurial.\n\nMercurial configuration injectable in repo revision when installing via pip\n",
+	"cveMetadata": {
+	  "assignerOrgId": "28c92f92-d60d-412d-b760-e73465c3df22",
+	  "assignerShortName": "PSF",
+	  "cveId": "CVE-2023-5752",
+	  "datePublished": 1698180965,
+	  "dateReserved": 1698159841,
+	  "dateUpdated": 1698183690,
+	  "state": "PUBLISHED"
+	}
+  }
+`
