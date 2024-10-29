@@ -3,7 +3,7 @@ package arangoHelper
 import (
 	"sync"
 
-	driver "github.com/arangodb/go-driver"
+	driver "github.com/arangodb/go-driver/v2/arangodb"
 )
 type ConnManager struct {
 	holder map[string]driver.Client

@@ -3,7 +3,8 @@ package arangoHelper
 import (
 	"context"
 
-	driver "github.com/arangodb/go-driver"
+	driver "github.com/arangodb/go-driver/v2/arangodb"
+	// "github.com/arangodb/go-driver/v2/arangodb"
 )
 
 type AQL map[string]interface{}
@@ -16,8 +17,8 @@ type ArangoContainer[T any] struct {
 	CollectionName string
 }
 
-type TXStore struct {
-	TxId      driver.TransactionID
-	TxContext context.Context
-	Db        driver.Database
-}
+// type TXStore struct {
+// 	Tx      driver.Transaction
+// 	TxContext context.Context
+// 	Db        arangodb.Database
+// }
