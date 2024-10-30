@@ -27,33 +27,23 @@ func NewArango[T any](ctx context.Context, clientId, dbName, collection string, 
 	m.Connection = RWdb
 	m.Model = model
 	m.Ctx = ctx
-	m.DatabaseName = dbName
+	m.Database ,_= m.Connection.GetDatabase(m.Ctx, dbName,&arangodb.GetDatabaseOptions{SkipExistCheck: true})
 	m.CollectionName = collection
 	return m
 }
-func (m *ArangoContainer[T])GetDatabase()(arangodb.Database,error){
-	return m.Connection.GetDatabase(m.Ctx, m.DatabaseName,&arangodb.GetDatabaseOptions{SkipExistCheck: true})
 
-}
 
 func (m *ArangoContainer[T])CreateCollection()(error){
-	db, err := m.GetDatabase()
-	if err!=nil{
-		return err
-	}
-	found, err := db.CollectionExists(m.Ctx, m.CollectionName)
+
+	found, err := m.Database.CollectionExists(m.Ctx, m.CollectionName)
 	if err != nil || found{
 		return err
 	}
-	_,err=db.CreateCollection(m.Ctx,m.CollectionName,&arangodb.CreateCollectionProperties{})
+	_,err=m.Database.CreateCollection(m.Ctx,m.CollectionName,&arangodb.CreateCollectionProperties{})
 	return err
 }
 
 func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
-	db, err := m.GetDatabase()
-	if err != nil {
-		return nil, err
-	}
 	if filter == nil {
 		filter = make(map[string]interface{})
 	}
@@ -72,7 +62,7 @@ func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
 
 	filter["@collection"] = m.CollectionName
 	fmt.Println(querystring)
-	cursor, err := db.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
+	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
 
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
@@ -94,10 +84,7 @@ func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
 }
 
 func (m *ArangoContainer[T]) FindAll(filter AQL, sort SORT, offset, limit uint64) ([]T, error) {
-	db, err := m.GetDatabase()
-	if err != nil {
-		return nil, err
-	}
+
 	if filter == nil {
 		filter = make(map[string]interface{})
 	}
@@ -129,7 +116,7 @@ func (m *ArangoContainer[T]) FindAll(filter AQL, sort SORT, offset, limit uint64
 	filter["@collection"] = m.CollectionName
 
 	fmt.Println(querystring)
-	cursor, err := db.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
+	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
 
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
@@ -151,10 +138,6 @@ func (m *ArangoContainer[T]) FindAll(filter AQL, sort SORT, offset, limit uint64
 	return docs, nil
 }
 func (m *ArangoContainer[T]) Update(filter AQL, data interface{}, limit uint64) ([]T, error) {
-	db, err := m.GetDatabase()
-	if err != nil {
-		return nil, err
-	}
 	if filter == nil {
 		filter = make(map[string]interface{})
 	}
@@ -179,7 +162,7 @@ func (m *ArangoContainer[T]) Update(filter AQL, data interface{}, limit uint64) 
 	fmt.Println(querystring)
 	filter["data"] = data
 	filter["@collection"] = m.CollectionName
-	cursor, err := db.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
+	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err
@@ -202,10 +185,7 @@ func (m *ArangoContainer[T]) Update(filter AQL, data interface{}, limit uint64) 
 }
 
 func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint64) ([]T, error) {
-	db, err := m.GetDatabase()
-	if err != nil {
-		return nil, err
-	}
+
 	if filter == nil {
 		filter = make(map[string]interface{})
 	}
@@ -229,7 +209,7 @@ func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint
 	querystring += " RETURN NEW"
 	fmt.Println(querystring)
 	filter["@collection"] = m.CollectionName
-	cursor, err := db.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
+	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err
@@ -254,11 +234,8 @@ func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint
 //opt TransactionId used for running Query as Member of Transaction
 //opt Count 
 func (m *ArangoContainer[T]) RawQuery(query string,opt *arangodb.QueryOptions) ([]T, error) {
-	db, err := m.GetDatabase()
-	if err != nil {
-		return nil, err
-	}
-	cursor, err := db.Query(m.Ctx, query, opt)
+
+	cursor, err := m.Database.Query(m.Ctx, query, opt)
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err
@@ -279,10 +256,6 @@ func (m *ArangoContainer[T]) RawQuery(query string,opt *arangodb.QueryOptions) (
 	return docs, nil
 }
 func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
-	db, err := m.GetDatabase()
-	if err != nil {
-		return nil, err
-	}
 	querystring := "UPSERT @filter INSERT @data UPDATE @data INTO @@collection RETURN NEW"
 	fmt.Println(querystring)
 	bind:=make(map[string]interface{})
@@ -290,7 +263,7 @@ func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
 	bind["data"] = data
 
 	bind["@collection"] = m.CollectionName
-	cursor, err := db.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
+	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err
@@ -313,13 +286,10 @@ func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
 }
 
 func (m *ArangoContainer[T]) Insert() (map[string]interface{}, error) {
-	db, err := m.GetDatabase()
-	if err != nil {
-		return nil, err
-	}
+
 	querystring := "insert @data into @@collection return NEW"
 
-	cursor, err := db.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars:AQL{"@collection": m.CollectionName, "data": m.Model}})
+	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars:AQL{"@collection": m.CollectionName, "data": m.Model}})
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err

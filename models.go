@@ -13,8 +13,9 @@ type ArangoContainer[T any] struct {
 	Model          T
 	Ctx            context.Context
 	Connection     driver.Client
-	DatabaseName   string
+	Database   driver.Database
 	CollectionName string
+
 }
 
 // type TXStore struct {
