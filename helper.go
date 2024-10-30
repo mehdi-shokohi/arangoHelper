@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	driver "github.com/arangodb/go-driver"
+	driver "github.com/arangodb/go-driver/v2/arangodb/shared"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 )
@@ -250,12 +250,15 @@ func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint
 	return docs, nil
 
 }
-func (m *ArangoContainer[T]) RawQuery(query string,bindVar AQL) ([]T, error) {
+//opt BindVars 
+//opt TransactionId used for running Query as Member of Transaction
+//opt Count 
+func (m *ArangoContainer[T]) RawQuery(query string,opt *arangodb.QueryOptions) ([]T, error) {
 	db, err := m.GetDatabase()
 	if err != nil {
 		return nil, err
 	}
-	cursor, err := db.Query(m.Ctx, query, &arangodb.QueryOptions{BindVars: bindVar})
+	cursor, err := db.Query(m.Ctx, query, opt)
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err
@@ -316,7 +319,7 @@ func (m *ArangoContainer[T]) Insert() (map[string]interface{}, error) {
 	}
 	querystring := "insert @data into @@collection return NEW"
 
-	cursor, err := db.Query(m.Ctx, querystring, &arangodb.QueryOptions{TransactionID: "",BindVars:AQL{"@collection": m.CollectionName, "data": m.Model}})
+	cursor, err := db.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars:AQL{"@collection": m.CollectionName, "data": m.Model}})
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err
@@ -339,7 +342,7 @@ func NewTransactionContext(ctx context.Context, clientId, dbName string, collect
 		return nil, err
 	}
 
-	trx, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{Read: collectionContribute,Write: collectionContribute}, &arangodb.BeginTransactionOptions{AllowImplicit: true,WaitForSync: true})
+	trx, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{Read: collectionContribute,Write: collectionContribute}, &arangodb.BeginTransactionOptions{})
 	if err != nil {
 		return nil, err
 	}

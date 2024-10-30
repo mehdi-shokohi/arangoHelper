@@ -190,7 +190,7 @@ func TestRawQueryWithoutBindVar(t *testing.T) {
 func TestRawQuery(t *testing.T) {
 	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:27020"}, Username: "root", Password: "m123"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "items", Terminology{})
-	results, err := db.RawQuery("for doc in items filter doc.terminologyId == @termId sort doc._id desc limit 0,10 return doc", AQL{"termId": "ICPC2P"})
+	results, err := db.RawQuery("for doc in items filter doc.terminologyId == @termId sort doc._id desc limit 0,10 return doc", &driver.QueryOptions{BindVars:AQL{"termId": "ICPC2P"}})
 	if err == nil {
 		for _, v := range results {
 			fmt.Println(v)
@@ -244,19 +244,18 @@ func TestTransaction(t *testing.T) {
 	user["name"] = "mate"
 	user["age"] = 38
 
-	// dbUser:=NewArango(ctx,defaultStore,defaultDb,"users",user)
-	// dbUser.Insert()
 	querystring := "insert @data into @@collection return NEW"
+	dbUser:=NewArango(ctx,defaultStore,defaultDb,"users",user)
 
-	trx.Query(ctx, querystring, &driver.QueryOptions{BindVars: AQL{"@collection": "users", "data": user}})
+	dbUser.RawQuery(querystring, &driver.QueryOptions{TransactionID: string(trx.ID()),BindVars: AQL{"@collection": "users", "data": user}})
 	info := make(map[string]interface{})
 	info["score"] = 10
 	info["user"] = user["name"]
-	// dbInfo:=NewArango(tx.TxContext,defaultStore,defaultDb,"info",info)
-	// dbInfo.InsertTx(tx.Tx)
-	trx.Query(ctx, querystring, &driver.QueryOptions{BindVars: AQL{"@collection": "info", "data": info}})
-	trx.Abort(ctx, &driver.AbortTransactionOptions{})
-	// fmt.Println(tx.Tx.Status(tx.TxContext))
+
+	dbInfo:=NewArango(ctx,defaultStore,defaultDb,"info",info)
+	dbInfo.RawQuery( querystring, &driver.QueryOptions{TransactionID: string(trx.ID()),BindVars: AQL{"@collection": "info", "data": info}})
+	// trx.Abort(ctx, &driver.AbortTransactionOptions{})
+	trx.Commit(ctx, &driver.CommitTransactionOptions{})
 
 }
 
