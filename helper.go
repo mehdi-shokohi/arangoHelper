@@ -263,7 +263,7 @@ func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
 	bind["data"] = data
 
 	bind["@collection"] = m.CollectionName
-	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
+	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: bind})
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
 		return nil, err
