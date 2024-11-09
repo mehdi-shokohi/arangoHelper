@@ -4,19 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+
 	"strings"
 
 	driver "github.com/arangodb/go-driver/v2/arangodb/shared"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 )
-type AuthOptions struct{
-	Url []string
+
+type AuthOptions struct {
+	Url      []string
 	Username string
 	Password string
 }
-
 
 func NewArango[T any](ctx context.Context, clientId, dbName, collection string, model T) ArangoContainer[T] {
 	m := ArangoContainer[T]{}
@@ -27,19 +27,18 @@ func NewArango[T any](ctx context.Context, clientId, dbName, collection string, 
 	m.Connection = RWdb
 	m.Model = model
 	m.Ctx = ctx
-	m.Database ,_= m.Connection.GetDatabase(m.Ctx, dbName,&arangodb.GetDatabaseOptions{SkipExistCheck: true})
+	m.Database, _ = m.Connection.GetDatabase(m.Ctx, dbName, &arangodb.GetDatabaseOptions{SkipExistCheck: true})
 	m.CollectionName = collection
 	return m
 }
 
-
-func (m *ArangoContainer[T])CreateCollection()(error){
+func (m *ArangoContainer[T]) CreateCollection() error {
 
 	found, err := m.Database.CollectionExists(m.Ctx, m.CollectionName)
-	if err != nil || found{
+	if err != nil || found {
 		return err
 	}
-	_,err=m.Database.CreateCollection(m.Ctx,m.CollectionName,&arangodb.CreateCollectionProperties{})
+	_, err = m.Database.CreateCollection(m.Ctx, m.CollectionName, &arangodb.CreateCollectionProperties{})
 	return err
 }
 
@@ -49,12 +48,14 @@ func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
 	}
 	querystring := "FOR doc IN @@collection "
 	exp := []string{}
-	for k ,v:= range filter {
-		if strings.HasPrefix(k,"__") {continue}
-		scapedKey:="__"+strings.ReplaceAll(k,".","_")
+	for k, v := range filter {
+		if strings.HasPrefix(k, "__") {
+			continue
+		}
+		scapedKey := "__" + strings.ReplaceAll(k, ".", "_")
 		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
 		filter[scapedKey] = v
-		}
+	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
 	}
@@ -65,7 +66,7 @@ func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
 	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
 
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		fmt.Printf("Query failed: %v", err)
 		return nil, err
 	}
 	defer cursor.Close()
@@ -91,11 +92,14 @@ func (m *ArangoContainer[T]) FindAll(filter AQL, sort SORT, offset, limit uint64
 	querystring := "FOR doc IN @@collection "
 	exp := []string{}
 
-	for k ,v:= range filter {
-		if strings.HasPrefix(k,"__") {continue}
-		scapedKey:="__"+strings.ReplaceAll(k,".","_")
+	for k, v := range filter {
+		if strings.HasPrefix(k, "__") {
+			continue
+		}
+		scapedKey := "__" + strings.ReplaceAll(k, ".", "_")
 		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
 		filter[scapedKey] = v
+		delete(filter, k)
 	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
@@ -117,9 +121,9 @@ func (m *ArangoContainer[T]) FindAll(filter AQL, sort SORT, offset, limit uint64
 
 	fmt.Println(querystring)
 	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
-
+	
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		fmt.Printf("Query failed: %v", err)
 		return nil, err
 	}
 	defer cursor.Close()
@@ -144,12 +148,15 @@ func (m *ArangoContainer[T]) Update(filter AQL, data interface{}, limit uint64) 
 	querystring := "FOR doc IN @@collection "
 	exp := []string{}
 
-	for k,v := range filter {
-		if strings.HasPrefix(k,"__") {continue}
-		scapedKey:="__"+strings.ReplaceAll(k,".","_")
+	for k, v := range filter {
+		if strings.HasPrefix(k, "__") {
+			continue
+		}
+		scapedKey := "__" + strings.ReplaceAll(k, ".", "_")
 		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
 		filter[scapedKey] = v
-		}
+		delete(filter,k)
+	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
 		if limit > 0 {
@@ -164,7 +171,7 @@ func (m *ArangoContainer[T]) Update(filter AQL, data interface{}, limit uint64) 
 	filter["@collection"] = m.CollectionName
 	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		fmt.Printf("Query failed: %v", err)
 		return nil, err
 	}
 	defer cursor.Close()
@@ -184,7 +191,7 @@ func (m *ArangoContainer[T]) Update(filter AQL, data interface{}, limit uint64) 
 
 }
 
-func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint64) ([]T, error) {
+func (m *ArangoContainer[T]) UpdateExpr(filter AQL, expression string, limit uint64) ([]T, error) {
 
 	if filter == nil {
 		filter = make(map[string]interface{})
@@ -192,11 +199,15 @@ func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint
 	querystring := "FOR doc IN @@collection "
 	exp := []string{}
 
-	for k,v := range filter {
-		if strings.HasPrefix(k,"__") {continue}
-		scapedKey:="__"+strings.ReplaceAll(k,".","_")
+	for k, v := range filter {
+		if strings.HasPrefix(k, "__") {
+			continue
+		}
+		scapedKey := "__" + strings.ReplaceAll(k, ".", "_")
 		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
-		filter[scapedKey] = v	
+		filter[scapedKey] = v
+		delete(filter,k)
+
 	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
@@ -204,14 +215,14 @@ func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint
 			querystring += fmt.Sprintf(" LIMIT 0,%d", limit)
 		}
 	}
-	querystring += fmt.Sprintf(" update { _key: doc._key } with %s in @@collection",expression)
+	querystring += fmt.Sprintf(" update { _key: doc._key } with %s in @@collection", expression)
 
 	querystring += " RETURN NEW"
 	fmt.Println(querystring)
 	filter["@collection"] = m.CollectionName
 	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		fmt.Printf("Query failed: %v", err)
 		return nil, err
 	}
 	defer cursor.Close()
@@ -230,14 +241,15 @@ func (m *ArangoContainer[T]) UpdateExpr(filter AQL,expression string, limit uint
 	return docs, nil
 
 }
-//opt BindVars 
-//opt TransactionId used for running Query as Member of Transaction
-//opt Count 
-func (m *ArangoContainer[T]) RawQuery(query string,opt *arangodb.QueryOptions) ([]T, error) {
+
+// opt BindVars
+// opt TransactionId used for running Query as Member of Transaction
+// opt Count
+func (m *ArangoContainer[T]) RawQuery(query string, opt *arangodb.QueryOptions) ([]T, error) {
 
 	cursor, err := m.Database.Query(m.Ctx, query, opt)
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		fmt.Printf("Query failed: %v", err)
 		return nil, err
 	}
 	defer cursor.Close()
@@ -258,14 +270,14 @@ func (m *ArangoContainer[T]) RawQuery(query string,opt *arangodb.QueryOptions) (
 func (m *ArangoContainer[T]) Upsert(filter AQL, data interface{}) ([]T, error) {
 	querystring := "UPSERT @filter INSERT @data UPDATE @data INTO @@collection RETURN NEW"
 	fmt.Println(querystring)
-	bind:=make(map[string]interface{})
+	bind := make(map[string]interface{})
 	bind["filter"] = filter
 	bind["data"] = data
 
 	bind["@collection"] = m.CollectionName
 	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: bind})
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		fmt.Printf("Query failed: %v", err)
 		return nil, err
 	}
 	defer cursor.Close()
@@ -289,9 +301,9 @@ func (m *ArangoContainer[T]) Insert() (map[string]interface{}, error) {
 
 	querystring := "insert @data into @@collection return NEW"
 
-	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars:AQL{"@collection": m.CollectionName, "data": m.Model}})
+	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: AQL{"@collection": m.CollectionName, "data": m.Model}})
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		fmt.Printf("Query failed: %v", err)
 		return nil, err
 	}
 	defer cursor.Close()
@@ -299,7 +311,6 @@ func (m *ArangoContainer[T]) Insert() (map[string]interface{}, error) {
 	_, err = cursor.ReadDocument(m.Ctx, &doc)
 	return doc, err
 }
-
 
 func NewTransactionContext(ctx context.Context, clientId, dbName string, collectionContribute []string) (arangodb.Transaction, error) {
 	cli, exist := GetClientById(clientId)
@@ -312,11 +323,11 @@ func NewTransactionContext(ctx context.Context, clientId, dbName string, collect
 		return nil, err
 	}
 
-	trx, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{Read: collectionContribute,Write: collectionContribute}, &arangodb.BeginTransactionOptions{})
+	trx, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{Read: collectionContribute, Write: collectionContribute}, &arangodb.BeginTransactionOptions{})
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// tctx := trx.(trx)
 	// tx:=TXStore{Tx: trx,TxContext: ctx,Db: db}
 	return trx, nil
@@ -352,9 +363,8 @@ func CreateCollectionIfNotExist(ctx context.Context, clientId, dbName, collectio
 	return err
 }
 
-
 // func (t *TXStore)Commit()error{
-// 	return t.Tx.Commit(t.TxContext,&arangodb.CommitTransactionOptions{})		
+// 	return t.Tx.Commit(t.TxContext,&arangodb.CommitTransactionOptions{})
 // }
 
 // func (t *TXStore)Abort()error{
