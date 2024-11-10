@@ -55,6 +55,7 @@ func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
 		scapedKey := "__" + strings.ReplaceAll(k, ".", "_")
 		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
 		filter[scapedKey] = v
+		delete(filter,k)
 	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
