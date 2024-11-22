@@ -18,7 +18,7 @@ type User struct {
 }
 
 func TestConnection(t *testing.T) {
-	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mate123"})
+	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mmm121"})
 	client, ok := GetClientById("defaultdb")
 	var db driver.Database
 	var coll_exists bool
@@ -122,8 +122,12 @@ type Terminology struct {
 	Description   string      `json:"description"   bson:"description"`
 }
 
+func TestCreateIndex(t *testing.T) {
+	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mmm121"})
+	CreateIndex(context.Background(),"defaultdb","_system","users","mix-user-work",[]string{"uid","workId"},true,false)
+}
 func TestArangoContainer(t *testing.T) {
-	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mate123"})
+	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mmm121"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "items", Terminology{})
 	ter, err := db.FindOne(AQL{"code": 222})
 	if err != nil {
@@ -140,7 +144,7 @@ func TestArangoContainer(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mate123"})
+	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mmm121"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "items", Terminology{})
 	results, err := db.Update(AQL{"terminologyId": "ICD10-FA"}, AQL{"coding_fa": "grade-baa"}, 20)
 	if err == nil {
@@ -152,7 +156,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateFunc(t *testing.T) {
-	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:8530"}, Username: "root", Password: "mate123"})
+	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:8530"}, Username: "root", Password: "mmm121"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "users", AQL{})
 	results, err := db.UpdateExpr(AQL{"name": "mehdi"}, `{spec:APPEND(doc.spec,"elem")}`, 20)
 	if err == nil {
@@ -163,7 +167,7 @@ func TestUpdateFunc(t *testing.T) {
 
 }
 func TestUpsert(t *testing.T) {
-	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:8530"}, Username: "root", Password: "mate123"})
+	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:8530"}, Username: "root", Password: "mmm121"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "cves_new", map[string]string{})
 	data := make(map[string]interface{})
 	json.Unmarshal([]byte(jsonCVE), &data)
@@ -177,7 +181,7 @@ func TestUpsert(t *testing.T) {
 }
 
 func TestRawQueryWithoutBindVar(t *testing.T) {
-	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mate123"})
+	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mmm121"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "items", Terminology{})
 	results, err := db.RawQuery("for doc in items sort doc._id desc limit 0,10 return doc", nil)
 	if err == nil {

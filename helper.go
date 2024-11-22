@@ -55,7 +55,7 @@ func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
 		scapedKey := "__" + strings.ReplaceAll(k, ".", "_")
 		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
 		filter[scapedKey] = v
-		delete(filter,k)
+		delete(filter, k)
 	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
@@ -122,7 +122,7 @@ func (m *ArangoContainer[T]) FindAll(filter AQL, sort SORT, offset, limit uint64
 
 	fmt.Println(querystring)
 	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
-	
+
 	if err != nil {
 		fmt.Printf("Query failed: %v", err)
 		return nil, err
@@ -156,7 +156,7 @@ func (m *ArangoContainer[T]) Update(filter AQL, data interface{}, limit uint64) 
 		scapedKey := "__" + strings.ReplaceAll(k, ".", "_")
 		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
 		filter[scapedKey] = v
-		delete(filter,k)
+		delete(filter, k)
 	}
 	if len(exp) > 0 {
 		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
@@ -207,7 +207,7 @@ func (m *ArangoContainer[T]) UpdateExpr(filter AQL, expression string, limit uin
 		scapedKey := "__" + strings.ReplaceAll(k, ".", "_")
 		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
 		filter[scapedKey] = v
-		delete(filter,k)
+		delete(filter, k)
 
 	}
 	if len(exp) > 0 {
@@ -362,6 +362,32 @@ func CreateCollectionIfNotExist(ctx context.Context, clientId, dbName, collectio
 	}
 	_, err = db.CreateCollection(ctx, collectionName, nil)
 	return err
+}
+
+func CreateIndex(ctx context.Context, clientId, dbName, collectionName,indexName string, fields []string, sparse, unique bool) error {
+	client, ok := GetClientById(clientId)
+	if !ok {
+		return errors.New("client not found")
+	}
+	db, err := client.Database(ctx, dbName)
+	if err != nil {
+		return err
+	}
+	col, err := db.Collection(ctx, collectionName)
+	if err != nil {
+		return err
+	}
+	index, _, err := col.EnsurePersistentIndex(ctx, fields, &arangodb.CreatePersistentIndexOptions{
+		Name: indexName,
+		Unique: &unique, // Set to true if you need a unique index
+		Sparse: &sparse, // Set to true if null values should not be indexed
+	})
+	if err != nil {
+		fmt.Printf("Failed to create index: %v\n", err)
+		return err
+	}
+	fmt.Println(index)
+	return nil
 }
 
 // func (t *TXStore)Commit()error{
