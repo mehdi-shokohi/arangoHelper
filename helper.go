@@ -41,7 +41,48 @@ func (m *ArangoContainer[T]) CreateCollection() error {
 	_, err = m.Database.CreateCollection(m.Ctx, m.CollectionName, &arangodb.CreateCollectionProperties{})
 	return err
 }
+func (m *ArangoContainer[T]) Delete(filter AQL) (*T, error) {
+	if filter == nil {
+		filter = make(map[string]interface{})
+	}
+	querystring := "FOR doc IN @@collection "
+	exp := []string{}
+	for k, v := range filter {
+		if strings.HasPrefix(k, "__") {
+			continue
+		}
+		scapedKey := "__" + strings.ReplaceAll(k, ".", "_")
+		exp = append(exp, fmt.Sprintf("doc.%s == @%s", k, scapedKey))
+		filter[scapedKey] = v
+		delete(filter, k)
+	}
+	if len(exp) > 0 {
+		querystring += fmt.Sprintf("FILTER %s", strings.Join(exp, " && "))
+	}
+	querystring += " remove {_key: doc._key} in @@collection  "
 
+	filter["@collection"] = m.CollectionName
+	fmt.Println(querystring)
+	cursor, err := m.Database.Query(m.Ctx, querystring, &arangodb.QueryOptions{BindVars: filter})
+
+	if err != nil {
+		fmt.Printf("Query failed: %v", err)
+		return nil, err
+	}
+	defer cursor.Close()
+	doc := new(T)
+	for {
+		_, err := cursor.ReadDocument(m.Ctx, &doc)
+		if driver.IsNoMoreDocuments(err) {
+			break
+		} else if err != nil {
+			// handle other errors
+			continue
+		}
+	}
+
+	return doc, nil
+}
 func (m *ArangoContainer[T]) FindOne(filter AQL) (*T, error) {
 	if filter == nil {
 		filter = make(map[string]interface{})

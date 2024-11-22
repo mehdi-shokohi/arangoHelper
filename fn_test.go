@@ -154,7 +154,16 @@ func TestUpdate(t *testing.T) {
 	}
 
 }
+func TestDelete(t *testing.T) {
+	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:8529"}, Username: "root", Password: "mmm"})
+	db := NewArango(context.Background(), "defaultdb", "_system", "items", AQL{})
+	results, err := db.Delete(AQL{"terminologyId": "THRITAEHR.WARDTYPE","code":"000"})
 
+			fmt.Println(results,err)
+	
+
+
+}
 func TestUpdateFunc(t *testing.T) {
 	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:8530"}, Username: "root", Password: "mmm121"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "users", AQL{})
