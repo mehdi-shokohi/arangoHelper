@@ -23,7 +23,7 @@ func connect(auth AuthOptions) driver.Client {
 		auth.Url = GetDefaultLocalUri()
 	}
 	if auth.Username==""{auth.Username = "root"}
-	authConfig:= connection.Http2Configuration{
+	authConfig:= connection.HttpConfiguration{
 		Endpoint:   connection.NewRoundRobinEndpoints(auth.Url),
 		Authentication: connection.NewBasicAuth(auth.Username,auth.Password),
 		ContentType: connection.ApplicationJSON,
@@ -41,7 +41,7 @@ func connect(auth AuthOptions) driver.Client {
 		// },
 	}
 	
-	return driver.NewClient(connection.NewHttp2Connection(authConfig,))
+	return driver.NewClient(connection.NewHttpConnection(authConfig,))
 }
 // func connect(auth AuthOptions)arangodb.Client{
 
