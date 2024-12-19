@@ -124,13 +124,13 @@ type Terminology struct {
 
 func TestCreateIndex(t *testing.T) {
 	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mmm121"})
-	CreateIndex(context.Background(),"defaultdb","_system","users","mix-user-work",[]string{"uid","workId"},true,false)
+	CreateIndex(context.Background(), "defaultdb", "_system", "users", "mix-user-work", []string{"uid", "workId"}, true, false)
 }
 func TestArangoContainer(t *testing.T) {
-	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mmm121"})
+	AddNewConnection("defaultdb", AuthOptions{Username: "root", Password: "mate123"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "items", Terminology{})
 	ter, err := db.FindOne(AQL{"code": 222})
-	if err != nil {
+	if ter == nil {
 		fmt.Println(err)
 	}
 	fmt.Println(ter)
@@ -157,17 +157,19 @@ func TestUpdate(t *testing.T) {
 func TestDelete(t *testing.T) {
 	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:8529"}, Username: "root", Password: "mmm"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "items", AQL{})
-	results, err := db.Delete(AQL{"terminologyId": "THRITAEHR.WARDTYPE","code":"000"})
+	results, err := db.Delete(AQL{"terminologyId": "THRITAEHR.WARDTYPE", "code": "000"})
 
-			fmt.Println(results,err)
-	
-
+	fmt.Println(results, err)
 
 }
 func TestUpdateFunc(t *testing.T) {
-	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:8530"}, Username: "root", Password: "mmm121"})
-	db := NewArango(context.Background(), "defaultdb", "_system", "users", AQL{})
-	results, err := db.UpdateExpr(AQL{"name": "mehdi"}, `{spec:APPEND(doc.spec,"elem")}`, 20)
+	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:8529"}, Username: "root", Password: "11"})
+	db := NewArango(context.Background(), "defaultdb", "_system", "mate", AQL{})
+	elem := `	{	
+	"dep":1,
+		"tap":"42"	
+		}	`
+	results, err := db.UpdateExpr(AQL{"name": "mehdi"}, fmt.Sprintf(`{spec:APPEND(doc.spec,%s,true)}`, elem), 20)
 	if err == nil {
 		for _, v := range results {
 			fmt.Println(v)
@@ -203,7 +205,7 @@ func TestRawQueryWithoutBindVar(t *testing.T) {
 func TestRawQuery(t *testing.T) {
 	AddNewConnection("defaultdb", AuthOptions{Url: []string{"http://localhost:27020"}, Username: "root", Password: "m123"})
 	db := NewArango(context.Background(), "defaultdb", "_system", "items", Terminology{})
-	results, err := db.RawQuery("for doc in items filter doc.terminologyId == @termId sort doc._id desc limit 0,10 return doc", &driver.QueryOptions{BindVars:AQL{"termId": "ICPC2P"}})
+	results, err := db.RawQuery("for doc in items filter doc.terminologyId == @termId sort doc._id desc limit 0,10 return doc", &driver.QueryOptions{BindVars: AQL{"termId": "ICPC2P"}})
 	if err == nil {
 		for _, v := range results {
 			fmt.Println(v)
@@ -258,15 +260,15 @@ func TestTransaction(t *testing.T) {
 	user["age"] = 38
 
 	querystring := "insert @data into @@collection return NEW"
-	dbUser:=NewArango(ctx,defaultStore,defaultDb,"users",user)
+	dbUser := NewArango(ctx, defaultStore, defaultDb, "users", user)
 
-	dbUser.RawQuery(querystring, &driver.QueryOptions{TransactionID: string(trx.ID()),BindVars: AQL{"@collection": "users", "data": user}})
+	dbUser.RawQuery(querystring, &driver.QueryOptions{TransactionID: string(trx.ID()), BindVars: AQL{"@collection": "users", "data": user}})
 	info := make(map[string]interface{})
 	info["score"] = 10
 	info["user"] = user["name"]
 
-	dbInfo:=NewArango(ctx,defaultStore,defaultDb,"info",info)
-	dbInfo.RawQuery( querystring, &driver.QueryOptions{TransactionID: string(trx.ID()),BindVars: AQL{"@collection": "info", "data": info}})
+	dbInfo := NewArango(ctx, defaultStore, defaultDb, "info", info)
+	dbInfo.RawQuery(querystring, &driver.QueryOptions{TransactionID: string(trx.ID()), BindVars: AQL{"@collection": "info", "data": info}})
 	// trx.Abort(ctx, &driver.AbortTransactionOptions{})
 	trx.Commit(ctx, &driver.CommitTransactionOptions{})
 

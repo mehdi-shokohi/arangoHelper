@@ -418,7 +418,7 @@ func CreateIndex(ctx context.Context, clientId, dbName, collectionName,indexName
 	if err != nil {
 		return err
 	}
-	index, _, err := col.EnsurePersistentIndex(ctx, fields, &arangodb.CreatePersistentIndexOptions{
+	_, _, err = col.EnsurePersistentIndex(ctx, fields, &arangodb.CreatePersistentIndexOptions{
 		Name: indexName,
 		Unique: &unique, // Set to true if you need a unique index
 		Sparse: &sparse, // Set to true if null values should not be indexed
@@ -427,7 +427,6 @@ func CreateIndex(ctx context.Context, clientId, dbName, collectionName,indexName
 		fmt.Printf("Failed to create index: %v\n", err)
 		return err
 	}
-	fmt.Println(index)
 	return nil
 }
 
